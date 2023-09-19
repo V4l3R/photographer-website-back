@@ -56,6 +56,20 @@ const handleSuccess = (res) => {
         .status(200)
         .contentType("text/plain")
         .end();
+    // .end(res);
+    // .end(succ);
+};
+
+const handleSuccessAndReturnToken = (res, token) => {
+
+    console.log("on aaaaaaaaaaa token");
+    console.log(token);
+
+    res
+        .status(200)
+        .contentType("text/plain")
+        .end(token);
+    // .end(res);
     // .end(succ);
 };
 
@@ -413,16 +427,18 @@ app.post('/connect', (req, res) => {
     let username = req.body.username;
     let password = bcrypt.hashSync(req.body.password, SALT);
 
-    getAdmin(username).then((resp) => {
+    getAdmin(username).then((admin) => {
 
-        if (resp === null) {
+        if (admin === null) {
             handleError("L'utilisateur n'a pas été trouvé", res);
         } else {
 
-            if (resp.password !== password) {
+            if (admin.password !== password) {
                 handleError("Le mot de passe est incorrect", res);
             } else {
-                handleSuccess(res);
+
+                createConnectionToken(username, res);
+
             }
         }
     })
@@ -431,84 +447,106 @@ app.post('/connect', (req, res) => {
 app.post('/saveAlbum', (req, res) => {
 
     var albumName = req.body.newAlbumName;
-    // var albumName = dumbAlbumName;
-    // var albumName = "teton3";
 
-    getAlbum(albumName).then(album => {
+    let adminUsername = req.body.adminUsername;
+    let accessToken = req.body.accessToken;
 
-        // Si l'album existe deja, retourner erreur
-        if (album !== null) {
-            handleError("L'album existe deja", res);
-        } else {
+    // On vérifie la validité du token
+    if (validateAdminToken(adminUsername, accessToken, res)) {
 
-            // Sinon sauvegarder l'album
-            addAlbum(albumName).then(resp => {
-                if (resp.acknowledged) {
-                    handleSuccess(res);
-                } else {
-                    handleError("L'album n'a pas pu être sauvegardé", res);
-                }
-            })
-        }
-    })
+        getAlbum(albumName).then(album => {
+
+            // Si l'album existe deja, retourner erreur
+            if (album !== null) {
+                handleError("L'album existe deja", res);
+            } else {
+
+                // Sinon sauvegarder l'album
+                addAlbum(albumName).then(resp => {
+                    if (resp.acknowledged) {
+                        handleSuccess(res);
+                    } else {
+                        handleError("L'album n'a pas pu être sauvegardé", res);
+                    }
+                })
+            }
+        })
+    }
+
 });
 
 app.post('/renameAlbum', (req, res) => {
 
     var oldAlbumName = req.body.targetedAlbumName;
     var newAlbumName = req.body.newAlbumName;
-    // var albumName = dumbAlbumName;
-    // var albumName = "teton3";
 
-    getAlbum(oldAlbumName).then(oldAlbum => {
+    let adminUsername = req.body.adminUsername;
+    let accessToken = req.body.accessToken;
 
-        // Si l'album n'existe pas, retourner erreur
-        if (oldAlbum === null) {
-            handleError("L'album n'existe pas", res);
-        } else {
+    // On vérifie la validité du token
+    if (validateAdminToken(adminUsername, accessToken, res)) {
 
-            getAlbum(newAlbumName).then(newAlbum => {
+        getAlbum(oldAlbumName).then(oldAlbum => {
 
-                // Si le nouveau nom d'album est deja pris, retourner erreur
-                if (newAlbum !== null) {
-                    handleError("Ce nom d'album est deja pris", res);
-                } else {
-                    // Sinon renommer l'album
-                    updateAlbumName(oldAlbumName, newAlbumName).then(resp => {
-                        if (resp.acknowledged) {
-                            handleSuccess(res);
-                        } else {
-                            handleError("L'album n'a pas pu être renommé", res);
-                        }
-                    })
-                }
-            })
-        }
-    })
+            // Si l'album n'existe pas, retourner erreur
+            if (oldAlbum === null) {
+                handleError("L'album n'existe pas", res);
+            } else {
+
+                getAlbum(newAlbumName).then(newAlbum => {
+
+                    // Si le nouveau nom d'album est deja pris, retourner erreur
+                    if (newAlbum !== null) {
+                        handleError("Ce nom d'album est deja pris", res);
+                    } else {
+                        // Sinon renommer l'album
+                        updateAlbumName(oldAlbumName, newAlbumName).then(resp => {
+                            if (resp.acknowledged) {
+                                handleSuccess(res);
+                            } else {
+                                handleError("L'album n'a pas pu être renommé", res);
+                            }
+                        })
+                    }
+                })
+            }
+        })
+    }
 });
 
 app.post('/updateDefaultAlbum', (req, res) => {
 
     var albumName = req.body.targetedAlbumName;
 
-    getAlbum(albumName).then(album => {
+    let adminUsername = req.body.adminUsername;
+    let accessToken = req.body.accessToken;
 
-        // Si l'album n'existe pas, on retourner une erreur
-        if (album === null) {
-            handleError("L'album n'existe pas", res);
-        } else {
+    // On vérifie la validité du token
+    if (validateAdminToken(adminUsername, accessToken, res)) {
 
-            // On cherche s'il existe un album par default, si oui on le passe a false
-            getDefaultAlbum().then(defaultAlbum => {
-                if (defaultAlbum !== null) {
-                    updateAlbumDefault(defaultAlbum.name, false);
-                }
-            })
+        console.log("on cherche : ");
+        console.log(albumName);
 
-            // Dans tous les cas, on passe l'album trouvé à true
-            updateAlbumDefault(album.name, true);
-        }
-    })
+        getAlbum(albumName).then(album => {
+
+            // Si l'album n'existe pas, on retourner une erreur
+            if (album === null) {
+                handleError("L'album n'existe pas", res);
+            } else {
+
+                // On cherche s'il existe un album par default, si oui on le passe a false
+                getDefaultAlbum().then(defaultAlbum => {
+                    if (defaultAlbum !== null) {
+                        updateAlbumDefault(defaultAlbum.name, false);
+                    }
+                })
+
+                // Dans tous les cas, on passe l'album trouvé à true
+                updateAlbumDefault(album.name, true);
+                handleSuccess(res);
+            }
+        })
+    }
 
 })
 
@@ -516,125 +554,144 @@ app.post('/uploadPictures',
     upload.array("files", 100),
     (req, res) => {
 
-
         var albumName = req.body.targetedAlbumName;
-        // var albumName = dumbAlbumName;
-        // var albumName = "teton3";
 
-        getAlbum(albumName).then(album => {
+        let adminUsername = req.body.adminUsername;
+        let accessToken = req.body.accessToken;
 
-            // Si l'album n'existe pas, retourner erreur
-            if (album === null) {
-                // handleError("L'album n'existe pas", res);
-                unlinksAndError(req.files, "L'album n'existe pas", res);
-            } else {
+        // On vérifie la validité du token
+        if (validateAdminToken(adminUsername, accessToken, res)) {
 
-                // console.log("on a comme files : ");
-                // console.log(req.files);
-                // console.log("on a comme album : ");
-                // console.log(album);
+            getAlbum(albumName).then(album => {
 
-                const pictures = album.pictures;
+                // Si l'album n'existe pas, retourner erreur
+                if (album === null) {
+                    // handleError("L'album n'existe pas", res);
+                    unlinksAndError(req.files, "L'album n'existe pas", res);
+                } else {
 
-                // Sinon sauvegarder les photos
-                req.files.forEach(file => {
+                    const pictures = album.pictures;
 
-                    let fileObj = {};
-                    fileObj.name = removeExtFromName(file.originalname);
-                    fileObj.base64 = base64_encode(file.path);
-                    pictures.push(fileObj);
+                    // Sinon sauvegarder les photos
+                    req.files.forEach(file => {
 
-                })
+                        let fileObj = {};
+                        fileObj.name = removeExtFromName(file.originalname);
+                        fileObj.base64 = base64_encode(file.path);
+                        pictures.push(fileObj);
 
-                updateAlbumPicture(albumName, pictures).then(resp => {
-                    if (resp.acknowledged) {
-                        // handleSuccess(res);
-                        unlinksAndSuccess(req.files, res);
-                    } else {
-                        // handleError("Les photos n'ont pas pu être sauvegardées", res);
-                        unlinksAndError(req.files, "Les photos n'ont pas pu être sauvegardées", res);
-                    }
-                })
-            }
-        })
+                    })
+
+                    updateAlbumPicture(albumName, pictures).then(resp => {
+                        if (resp.acknowledged) {
+                            // handleSuccess(res);
+                            unlinksAndSuccess(req.files, res);
+                        } else {
+                            // handleError("Les photos n'ont pas pu être sauvegardées", res);
+                            unlinksAndError(req.files, "Les photos n'ont pas pu être sauvegardées", res);
+                        }
+                    })
+                }
+            })
+
+        }
     });
 
 app.post('/updatePictureName', (req, res) => {
 
     var albumName = req.body.targetedAlbumName;
 
-    getAlbum(albumName).then(album => {
-        // Si l'album n'existe pas, retourner erreur
-        if (album === null) {
-            handleError("L'album n'existe pas", res);
-        } else {
+    let adminUsername = req.body.adminUsername;
+    let accessToken = req.body.accessToken;
 
-            const pictures = album.pictures;
-            pictures[req.body.updatedPicture].name = req.body.updatedPictureName;
+    // On vérifie la validité du token
+    if (validateAdminToken(adminUsername, accessToken, res)) {
 
-            updateAlbumPicture(albumName, pictures).then(resp => {
-                if (resp.acknowledged) {
-                    handleSuccess(res);
-                } else {
-                    handleError("La photo n'a pas pu être renommée", res);
-                }
-            })
-        }
-    })
+        getAlbum(albumName).then(album => {
+            // Si l'album n'existe pas, retourner erreur
+            if (album === null) {
+                handleError("L'album n'existe pas", res);
+            } else {
+    
+                const pictures = album.pictures;
+                pictures[req.body.updatedPicture].name = req.body.updatedPictureName;
+    
+                updateAlbumPicture(albumName, pictures).then(resp => {
+                    if (resp.acknowledged) {
+                        handleSuccess(res);
+                    } else {
+                        handleError("La photo n'a pas pu être renommée", res);
+                    }
+                })
+            }
+        })
+    }
 });
 
 app.post('/deleteAlbumPictures', (req, res) => {
 
     var albumName = req.body.targetedAlbumName;
-    // var albumName = dumbAlbumName;
-    // var albumName = "teton3";
 
-    getAlbum(albumName).then(album => {
+    let adminUsername = req.body.adminUsername;
+    let accessToken = req.body.accessToken;
 
-        // Si l'album n'existe pas, retourner erreur
-        if (album === null) {
-            handleError("L'album n'existe pas", res);
-        } else {
+    // On vérifie la validité du token
+    if (validateAdminToken(adminUsername, accessToken, res)) {
 
-            const pictures = album.pictures;
-
-            // Sinon supprimer les photos
-            req.body.deletedPictures.split(",").sort(function (a, b) { return b - a }).forEach(picture => {
-                pictures.splice(picture, 1);
-            });
-
-            updateAlbumPicture(albumName, pictures).then(resp => {
-                if (resp.acknowledged) {
-                    handleSuccess(res);
-                } else {
-                    handleError("Les photos n'ont pas pu être supprimées", res);
-                }
-            })
-        }
-    })
+        getAlbum(albumName).then(album => {
+    
+            // Si l'album n'existe pas, retourner erreur
+            if (album === null) {
+                handleError("L'album n'existe pas", res);
+            } else {
+    
+                const pictures = album.pictures;
+    
+                // Sinon supprimer les photos
+                req.body.deletedPictures.split(",").sort(function (a, b) { return b - a }).forEach(picture => {
+                    pictures.splice(picture, 1);
+                });
+    
+                updateAlbumPicture(albumName, pictures).then(resp => {
+                    if (resp.acknowledged) {
+                        handleSuccess(res);
+                    } else {
+                        handleError("Les photos n'ont pas pu être supprimées", res);
+                    }
+                })
+            }
+        })
+    }
 });
 
 app.post('/deleteAlbum', (req, res) => {
 
     var albumName = req.body.targetedAlbumName;
 
-    getAlbum(albumName).then(album => {
+    let adminUsername = req.body.adminUsername;
+    let accessToken = req.body.accessToken;
 
-        // Si l'album n'existe pas, retourner erreur
-        if (album === null) {
-            handleError("L'album n'existe pas", res);
-            console.log("album non trouvé");
-        } else {
+    // On vérifie la validité du token
+    if (validateAdminToken(adminUsername, accessToken, res)) {
 
-            deleteAlbum(albumName).then(resp => {
-                if (resp.acknowledged) {
-                    handleSuccess(res);
-                } else {
-                    handleError("L'album n'a pas pu être supprimé", res);
-                }
-            })
-        }
-    })
+        getAlbum(albumName).then(album => {
+    
+            // Si l'album n'existe pas, retourner erreur
+            if (album === null) {
+                handleError("L'album n'existe pas", res);
+                console.log("album non trouvé");
+            } else {
+    
+                deleteAlbum(albumName).then(resp => {
+                    if (resp.acknowledged) {
+                        handleSuccess(res);
+                    } else {
+                        handleError("L'album n'a pas pu être supprimé", res);
+                    }
+                })
+            }
+        })
+    }
 });
 
 app.get('/getAlbumsList', (req, res) => {
@@ -662,26 +719,40 @@ app.get('/getSettings', (req, res) => {
 app.post('/updateSetting', (req, res) => {
 
     let settingName = req.body.settingName;
+    let adminUsername = req.body.adminUsername;
+    let accessToken = req.body.accessToken;
 
-    getSetting(settingName).then(setting => {
+    console.log("post updateSetting");
+    console.log(req.body);
+    console.log(adminUsername);
+    console.log(accessToken);
 
-        if (setting === null) {
-            handleError("Le paramètre n'existe pas", res)
-        } else {
 
-            let newValue = req.body.newValue;
+    // On vérifie la validité du token
+    if (validateAdminToken(adminUsername, accessToken, res)) {
 
-            updateSetting(settingName, newValue).then(resp => {
+        getSetting(settingName).then(setting => {
 
-                if (resp.acknowledged) {
-                    handleSuccess(res);
-                } else {
-                    handleError("Le paramètre n'a pas pû être sauvegardé", res);
-                }
+            if (setting === null) {
+                handleError("Le paramètre n'existe pas", res)
+            } else {
 
-            })
-        }
-    })
+                console.log("jjjjjjjjjjjjjjjjj2");
+
+                let newValue = req.body.newValue;
+
+                updateSetting(settingName, newValue).then(resp => {
+
+                    if (resp.acknowledged) {
+                        handleSuccess(res);
+                    } else {
+                        handleError("Le paramètre n'a pas pû être sauvegardé", res);
+                    }
+
+                })
+            }
+        })
+    }
 })
 
 app.get('/getDefaultAlbumName', (req, res) => {
@@ -715,21 +786,47 @@ app.post('/getAlbumPictures', (req, res) => {
 
 app.post('/resetUsername', (req, res) => {
 
-    // let username = req.body.username;
+    let adminUsername = req.body.adminUsername;
+    let accessToken = req.body.accessToken;
+
+    // On vérifie la validité du token
+    if (validateAdminToken(adminUsername, accessToken, res)) {
+        sendRecoverUsernameMail(adminUsername, res);
+    }
 
     // On vérifie que l'utilisateur existe en bdd
-    getOneAdmin().then((admin) => {
+    // getAdmin(adminUsername).then((admin) => {
 
-        // Si non, on envoi une erreur
-        if (admin === null) {
-            handleError("L'utilisateur n'a pas été trouvé", res);
-        } else {
+    //     // Si non, on envoi une erreur
+    //     if (admin === null) {
+    //         handleError("Vous n'êtes pas connecté", res);
+    //     } else {
 
-            // Si oui, on envoi un mail avec un lien de modification de nom d'utilisateur
-            sendRecoverUsernameMail(admin.username);
+    //         // On vérifie que le token existe
+    //         getToken(accessToken).then(token => {
 
-        }
-    })
+    //             // Si non, on retourne une erreur
+    //             if (token === null) {
+    //                 handleError("Vous n'êtes pas connecté", res);
+    //             } else {
+
+    //                 // Si oui, on vérifie la validité du token
+    //                 if (token.name === "connect" && token.end > Date.now() && token.username === adminUsername) {
+
+    //                     // Si oui, on envoi un mail avec un lien de modification de nom d'utilisateur
+    //                     sendRecoverUsernameMail(admin.username);
+    //                     handleSuccess(res);
+
+    //                 } else {
+
+    //                     // Si invalide, on retourne une erreur
+    //                     handleError("Le token n'est pas valide", res);
+
+    //                 }
+    //             }
+    //         })
+    //     }
+    // })
 })
 
 app.post('/changeUsername', (req, res) => {
@@ -867,7 +964,7 @@ app.post('/sendMail', (req, res) => {
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
-        
+
         if (error) {
             console.log(error);
             handleError("Le mail n'a pas pû être envoyé", res);
@@ -878,7 +975,7 @@ app.post('/sendMail', (req, res) => {
     });
 })
 
-function sendRecoverUsernameMail(username) {
+function sendRecoverUsernameMail(username, res) {
 
     // addTokensCollection();
 
@@ -893,7 +990,7 @@ function sendRecoverUsernameMail(username) {
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
-        
+
         if (error) {
             console.log(error);
             handleError("Le mail n'a pas pû être envoyé", res);
@@ -902,6 +999,29 @@ function sendRecoverUsernameMail(username) {
             handleSuccess(res);
         }
     });
+
+}
+
+function createConnectionToken(username, res) {
+
+    let token = bcrypt.hashSync(Date.now().toString(), SALT);
+    console.log("on a token : ");
+    console.log(token);
+
+    let dayInMilli = 1000 * 60 * 60 * 24;
+    var myobj = { name: "connection", username: username, value: token, end: Date.now() + dayInMilli };
+    // return db.collection("tokens").insertOne(speSett);
+    db.collection("tokens").insertOne(myobj).then((resp) => {
+        if (resp.acknowledged) {
+            console.log("on a create connection token : ");
+            console.log(token);
+
+            handleSuccessAndReturnToken(res, token);
+
+        } else {
+            handleError("La base de donnée n'a pas pû être contactée", res);
+        }
+    })
 
 }
 
@@ -935,7 +1055,7 @@ function sendRecoverPasswordMail(username) {
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
-        
+
         if (error) {
             console.log(error);
             handleError("Le mail n'a pas pû être envoyé", res);
@@ -959,6 +1079,48 @@ function createPasswordTokenAndCreateLink(username) {
     db.collection("tokens").insertOne(myobj);
 
     return 'http://localhost:3001/updatePassword?t=' + token;
+
+}
+
+async function validateAdminToken(adminUsername, accessToken, res) {
+
+    console.log("validateAdminToken");
+    console.log("username");
+    console.log(adminUsername);
+    console.log("token");
+    console.log(accessToken);
+
+    // On vérifie que l'utilisateur existe en bdd
+    getAdmin(adminUsername).then((admin) => {
+
+        // Si non, on envoi une erreur
+        if (admin === null) {
+            handleError("Vous n'êtes pas connecté", res);
+        } else {
+
+            // On vérifie que le token existe
+            getToken(accessToken).then(token => {
+
+                // Si non, on retourne une erreur
+                if (token === null) {
+                    handleError("Vous n'êtes pas connecté", res);
+                } else {
+
+                    // Si oui, on vérifie la validité du token
+                    if (token.name === "connection" && token.end > Date.now() && token.username === adminUsername) {
+
+                        return true;
+
+                    } else {
+
+                        // Si invalide, on retourne une erreur
+                        handleError("Le token n'est pas valide", res);
+
+                    }
+                }
+            })
+        }
+    })
 
 }
 
