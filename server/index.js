@@ -612,10 +612,10 @@ app.post('/updatePictureName', (req, res) => {
             if (album === null) {
                 handleError("L'album n'existe pas", res);
             } else {
-    
+
                 const pictures = album.pictures;
                 pictures[req.body.updatedPicture].name = req.body.updatedPictureName;
-    
+
                 updateAlbumPicture(albumName, pictures).then(resp => {
                     if (resp.acknowledged) {
                         handleSuccess(res);
@@ -639,19 +639,19 @@ app.post('/deleteAlbumPictures', (req, res) => {
     if (validateAdminToken(adminUsername, accessToken, res)) {
 
         getAlbum(albumName).then(album => {
-    
+
             // Si l'album n'existe pas, retourner erreur
             if (album === null) {
                 handleError("L'album n'existe pas", res);
             } else {
-    
+
                 const pictures = album.pictures;
-    
+
                 // Sinon supprimer les photos
                 req.body.deletedPictures.split(",").sort(function (a, b) { return b - a }).forEach(picture => {
                     pictures.splice(picture, 1);
                 });
-    
+
                 updateAlbumPicture(albumName, pictures).then(resp => {
                     if (resp.acknowledged) {
                         handleSuccess(res);
@@ -675,13 +675,13 @@ app.post('/deleteAlbum', (req, res) => {
     if (validateAdminToken(adminUsername, accessToken, res)) {
 
         getAlbum(albumName).then(album => {
-    
+
             // Si l'album n'existe pas, retourner erreur
             if (album === null) {
                 handleError("L'album n'existe pas", res);
                 console.log("album non trouvé");
             } else {
-    
+
                 deleteAlbum(albumName).then(resp => {
                     if (resp.acknowledged) {
                         handleSuccess(res);
@@ -889,7 +889,7 @@ app.post('/recoverPassword', (req, res) => {
         } else {
 
             // Si oui, on envoi un mail avec lien de récupération de mot de passe
-            sendRecoverPasswordMail(username);
+            sendRecoverPasswordMail(username, res);
 
         }
     })
@@ -986,7 +986,7 @@ function sendRecoverUsernameMail(username, res) {
         from: 'youremail@gmail.com',
         to: username,
         subject: 'Changement de votre adresse email',
-        html: 'Bonjour, <br/> Vous avez demandé un changement de votre adresse email. Pour confirmer, suivez ce lien : ' + lien + " <br/> Si vous n'êtes pas à l'origine de cette action, vous devriez changer votre mot de passe car cette action a été probablement effectuée avec vos identifiants."
+        html: 'Bonjour, <br/> Vous avez demandé un changement de votre adresse email. Pour confirmer, cliquez <a href="' + lien + '">ici</a>.  <br/> Si vous n\'êtes pas à l\'origine de cette action, vous devriez changer votre mot de passe car cette action a été probablement effectuée avec vos identifiants.'
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
@@ -1040,7 +1040,7 @@ function createUsernameTokenAndCreateLink(username) {
 
 }
 
-function sendRecoverPasswordMail(username) {
+function sendRecoverPasswordMail(username, res) {
 
     // addTokensCollection();
 
@@ -1051,7 +1051,7 @@ function sendRecoverPasswordMail(username) {
         from: 'youremail@gmail.com',
         to: username,
         subject: 'Récupération de votre mot de passe',
-        html: 'Bonjour, <br/> Vous avez demandé une réinitialisation de votre mot de passe. Pour créer un nouveau mot de passe, suivez ce lien : ' + lien + " <br/> Si vous n'êtes pas à l'origine de cette action, vous pouvez ignorer ce mail. Cependant, vous devez noter que quelqu'un a tenté de modifier votre mot de passe."
+        html: 'Bonjour, <br/> Vous avez demandé une réinitialisation de votre mot de passe. Pour créer un nouveau mot de passe, cliquez <a href="' + lien + '">ici</a>. <br/> Si vous n\'êtes pas à l\'origine de cette action, vous pouvez ignorer ce mail. Cependant, vous devez noter que quelqu\'un a tenté de modifier votre mot de passe.'
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
