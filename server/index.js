@@ -8,6 +8,7 @@ let {} = require("./initDb.js");
 
 let {
   getAdmin,
+  getFirstAdmin,
   updateAdminUsername,
   updateAdminPassword,
   getToken,
@@ -35,6 +36,7 @@ let {
 } = require("./dbController.js");
 
 let {
+  sendContactMail,
   sendRecoverUsernameMail,
   sendRecoverPasswordMail,
 } = require("./mailController.js");
@@ -268,10 +270,7 @@ app.post("/uploadPictures", upload.array("files", 100), (req, res) => {
           }
         );
       } else {
-        console.log("on ne devrait pas arriver ici");
-        console.log("on ne devrait pas arriver ici");
-        console.log("on ne devrait pas arriver ici");
-        console.log("on ne devrait pas arriver ici");
+        unlinksAndError(files, "Une erreur inconnue est survenue", res);
       }
     }
   );
@@ -432,6 +431,17 @@ app.post("/changePassword", (req, res) => {
         }
       });
     }
+  });
+});
+
+////////////////
+///// MAIL /////
+////////////////
+app.post("/sendMail", (req, res) => {
+  let { name, email, message } = req.body;
+
+  getFirstAdmin().then((admin) => {
+    sendContactMail(admin.username, name, email, message, res);
   });
 });
 

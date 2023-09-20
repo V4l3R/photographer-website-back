@@ -58,6 +58,15 @@ function getAdmin(username) {
     });
 }
 
+function getFirstAdmin() {
+  return db
+    .collection("admin")
+    .findOne()
+    .then((res) => {
+      return res;
+    });
+}
+
 function updateAdminUsername(oldUsername, newUsername) {
   var myquery = { username: oldUsername };
   var newvalues = { $set: { username: newUsername } };
@@ -384,6 +393,7 @@ async function validateAdminTokenAndUnlinks(
 
 module.exports = {
   getAdmin,
+  getFirstAdmin,
   updateAdminUsername,
   updateAdminPassword,
   getToken,
