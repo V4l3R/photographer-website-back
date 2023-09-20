@@ -65,27 +65,27 @@ function addSettingsData() {
   addSpecificSettings({
     name: "facebookUrl",
     label: "Url vers page facebook",
-    value: "http://www.facebook.com",
+    value: encodeURI("http://www.facebook.com"),
   });
   addSpecificSettings({
     name: "twitterUrl",
     label: "Url vers page twitter",
-    value: "http://www.twitter.com",
+    value: encodeURI("http://www.twitter.com"),
   });
   addSpecificSettings({
     name: "instagramUrl",
     label: "Url vers page instagram",
-    value: "http://www.instagram.com",
+    value: encodeURI("http://www.instagram.com"),
   });
   addSpecificSettings({
     name: "pinterestUrl",
     label: "Url vers page pinterest",
-    value: "http://www.pinterest.com",
+    value: encodeURI("http://www.pinterest.com"),
   });
   addSpecificSettings({
     name: "youtubeUrl",
     label: "Url vers page youtube",
-    value: "http://www.youtube.com",
+    value: encodeURI("http://www.youtube.com"),
   });
 }
 

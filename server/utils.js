@@ -46,7 +46,7 @@ function removeExtFromName(picName) {
 function addPicturesToArray(files, array) {
   files.forEach((file) => {
     let fileObj = {};
-    fileObj.name = removeExtFromName(file.originalname);
+    fileObj.name = encodeURIComponent(removeExtFromName(file.originalname));
     fileObj.base64 = base64_encode(file.path);
     array.push(fileObj);
   });
@@ -67,6 +67,18 @@ function removeValuesFromArray(values, array) {
   return array;
 }
 
+function getURI(component) {
+  console.log("getURI");
+  console.log(component);
+  return encodeURIComponent(component);
+}
+
+function parseURI(component) {
+  console.log("parseURI");
+  console.log(component);
+  return decodeURIComponent(component);
+}
+
 module.exports = {
   handleSuccess,
   handleSuccessAndReturnToken,
@@ -77,4 +89,6 @@ module.exports = {
   removeExtFromName,
   addPicturesToArray,
   removeValuesFromArray,
+  getURI,
+  parseURI,
 };

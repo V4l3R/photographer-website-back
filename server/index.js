@@ -49,6 +49,8 @@ let {
   removeExtFromName,
   addPicturesToArray,
   removeValuesFromArray,
+  getURI,
+  parseURI,
 } = require("./utils.js");
 
 const SALT = "$2b$10$BSMOEfTEeFdYjVkpFkF0xu";
@@ -108,14 +110,6 @@ app.get("/getDefaultAlbumName", (req, res) => {
   });
 });
 
-app.post("/getAlbumPictures", (req, res) => {
-  let albumName = req.body.targetedAlbumName;
-
-  getAlbum(albumName).then((album) => {
-    res.json(album);
-  });
-});
-
 app.get("/getAlbumsList", (req, res) => {
   console.log("/getAlbumsList");
   getAllAlbums().then((allAlbums) => {
@@ -128,8 +122,18 @@ app.get("/getAlbumsList", (req, res) => {
   });
 });
 
+app.post("/acquireAlbumPictures", (req, res) => {
+  let albumName = req.body.targetedAlbumName;
+
+  getAlbum(albumName).then((album) => {
+    res.json(album);
+  });
+});
+
 app.post("/saveAlbum", (req, res) => {
-  let { newAlbumName, adminUsername, accessToken } = req.body;
+  let newAlbumName = req.body.newAlbumName;
+  let adminUsername = req.body.adminUsername;
+  let accessToken = req.body.accessToken;
 
   // On vérifie la validité du token
   validateAdminToken(adminUsername, accessToken, "connection", res).then(
