@@ -324,31 +324,6 @@ async function getAdminFromTokenHandler(tokenValue, tokenName, res) {
   });
 }
 
-// async function getTokenResetDbHandler(tokenValue, res) {
-//   getToken(tokenValue).then((token) => {
-//     // Si non, on retourne une erreur
-//     if (token === null) {
-//       handleError("Le token n'a pas été trouvé", res);
-//     } else {
-//       // Si oui, on vérifie que l'utilisateur existe en bdd
-//       getAdmin(token.username).then((admin) => {
-//         // Si non, on retourne une erreur
-//         if (admin === null) {
-//           handleError("L'utilisateur n'a pas été trouvé", res);
-//         } else {
-//           // Si oui, on vérifie la validité du token
-//           if (token.name === "resetDb" && token.end > Date.now()) {
-//             return token;
-//           } else {
-//             // Si invalide, on retourne une erreur
-//             handleError("Le token n'est pas valide", res);
-//           }
-//         }
-//       });
-//     }
-//   });
-// }
-
 async function validateAdminToken(adminUsername, tokenValue, tokenName, res) {
   // On vérifie que l'utilisateur existe en bdd
   return getAdmin(adminUsername).then((admin) => {
@@ -363,9 +338,6 @@ async function validateAdminToken(adminUsername, tokenValue, tokenName, res) {
           handleError("Le token n'a pas été trouvé", res);
         } else {
           // Si oui, on vérifie la validité du token
-          console.log(token.name);
-          console.log(token.end > Date.now());
-          console.log(token.username === adminUsername);
           if (
             token.name === tokenName &&
             token.end > Date.now() &&
