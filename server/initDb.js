@@ -1,14 +1,34 @@
-function initDb() {
-  addAdminCollection().then(() => {
-    addAdminData().then(() => {
-      addSettingsCollection().then(() => {
-        addAlbumsCollection().then(() => {
-          addTokensCollection().then(() => {
-            addSettingsData();
+const SMTP_MAIL = "melissachesiphoto@gmail.com";
+
+async function drobDb() {
+  return removeTokensCollection().then(() => {
+    return removeAlbumsCollection().then(() => {
+      return removeSettingsCollection().then(() => {
+        return removeAdminCollection();
+      });
+    });
+  });
+}
+
+async function initDb() {
+  return addAdminCollection().then(() => {
+    return addAdminData().then(() => {
+      return addSettingsCollection().then(() => {
+        return addAlbumsCollection().then(() => {
+          return addTokensCollection().then(() => {
+            return addSettingsData().then(() => {
+              return true;
+            });
           });
         });
       });
     });
+  });
+}
+
+async function resetDb() {
+  return drobDb().then(() => {
+    return initDb();
   });
 }
 
@@ -20,9 +40,18 @@ function addAdminCollection() {
   });
 }
 
+function removeAdminCollection() {
+  return db.collection("admin").drop({});
+  // return db.collection("admin").drop((err, delOk) => {
+  //   console.log("Collection créée");
+  //   db.close();
+  //   return res;
+  // });
+}
+
 function addAdminData() {
   var myobj = {
-    username: "test@test.com",
+    username: SMTP_MAIL,
     password: "$2b$10$BSMOEfTEeFdYjVkpFkF0xuosMK3nPFTvk9CXlRlVYdVbVqZRp/Fca",
   };
   return db.collection("admin").insertOne(myobj);
@@ -36,11 +65,19 @@ function addSettingsCollection() {
   });
 }
 
+function removeSettingsCollection() {
+  return db.collection("settings").drop({});
+}
+
 function addAlbumsCollection() {
   return db.createCollection("albums", (res) => {
     db.close();
     return res;
   });
+}
+
+function removeAlbumsCollection() {
+  return db.collection("albums").drop({});
 }
 
 function addTokensCollection() {
@@ -49,6 +86,10 @@ function addTokensCollection() {
     db.close();
     return res;
   });
+}
+
+function removeTokensCollection() {
+  return db.collection("tokens").drop({});
 }
 
 function addSettingsData() {
@@ -82,7 +123,7 @@ function addSettingsData() {
     label: "Url vers page pinterest",
     value: encodeURI("http://www.pinterest.com"),
   });
-  addSpecificSettings({
+  return addSpecificSettings({
     name: "youtubeUrl",
     label: "Url vers page youtube",
     value: encodeURI("http://www.youtube.com"),
@@ -93,4 +134,4 @@ function addSpecificSettings(speSett) {
   return db.collection("settings").insertOne(speSett);
 }
 
-module.exports = {};
+module.exports = { resetDb };

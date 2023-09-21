@@ -6,11 +6,12 @@ let { handleSuccess, handleError } = require("./utils.js");
 // TODO: Const ?
 const SALT = "$2b$10$BSMOEfTEeFdYjVkpFkF0xu";
 const BASE_URL = "http://localhost:3001";
+const SMTP_MAIL = "melissachesiphoto@gmail.com";
 
 var transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "melissachesiphoto@gmail.com",
+    user: SMTP_MAIL,
     pass: "btbd escp gtnt lnna",
   },
 });
@@ -51,7 +52,7 @@ function sendRecoverUsernameMail(username, res) {
     html:
       'Bonjour, <br/> Vous avez demandé un changement de votre adresse email. Pour confirmer, cliquez <a href="' +
       lien +
-      "\">ici</a>.  <br/> Si vous n'êtes pas à l'origine de cette action, vous devriez changer votre mot de passe car cette action a été probablement effectuée avec vos identifiants.",
+      "\">ici</a>.  <br/> Ce lien est valable 1 heure. <br/> Si vous n'êtes pas à l'origine de cette action, vous devriez changer votre mot de passe car cette action a été effectuée avec vos identifiants.",
   };
 
   sendMail(mailOptions, res);
@@ -82,7 +83,7 @@ function sendRecoverPasswordMail(username, res) {
     html:
       'Bonjour, <br/> Vous avez demandé une réinitialisation de votre mot de passe. Pour créer un nouveau mot de passe, cliquez <a href="' +
       lien +
-      "\">ici</a>. <br/> Si vous n'êtes pas à l'origine de cette action, vous pouvez ignorer ce mail. Cependant, vous devez noter que quelqu'un a tenté de modifier votre mot de passe.",
+      "\">ici</a>. <br/> Ce lien est valable 1 heure. <br/> Si vous n'êtes pas à l'origine de cette action, vous pouvez ignorer ce mail. Cependant, vous devez noter que quelqu'un a tenté de modifier votre mot de passe.",
   };
 
   sendMail(mailOptions, res);
@@ -104,8 +105,41 @@ function createPasswordTokenAndCreateLink(username) {
   return BASE_URL + "/updatePassword?t=" + token;
 }
 
+function sendResetDbMail(adminUsername, res) {
+  var username = SMTP_MAIL;
+  var lien = createResetDbTokenAndCreateLink(adminUsername);
+
+  var mailOptions = {
+    to: username,
+    subject: "Réinitialisation de la base de donnée",
+    html:
+      'Bonjour, <br/> Vous avez demandé une réinitialisation de la base de données. Pour regénérer la base de données, cliquez <a href="' +
+      lien +
+      "\">ici</a>. <br/> Ce lien est valable 10 minutes. <br/> Si vous n'êtes pas à l'origine de cette action, vous devriez changer votre mot de passe car cette action a été effectuée avec vos identifiants.",
+  };
+
+  sendMail(mailOptions, res);
+}
+
+function createResetDbTokenAndCreateLink(username) {
+  // TODO : Changer avec un salt aléatoire ?
+  let token = bcrypt.hashSync(Date.now().toString(), SALT);
+
+  let tenMinutesInMilli = 1000 * 60 * 10;
+  var myobj = {
+    name: "resetDb",
+    username: username,
+    value: token,
+    end: Date.now() + tenMinutesInMilli,
+  };
+  db.collection("tokens").insertOne(myobj);
+
+  return BASE_URL + "/resetDb?t=" + token;
+}
+
 module.exports = {
   sendContactMail,
   sendRecoverUsernameMail,
   sendRecoverPasswordMail,
+  sendResetDbMail,
 };

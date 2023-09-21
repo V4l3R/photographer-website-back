@@ -4,7 +4,7 @@ const multer = require("multer");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 
-let {} = require("./initDb.js");
+let { resetDb } = require("./initDb.js");
 
 let {
   getAdmin,
@@ -30,7 +30,7 @@ let {
   getAlbumAndUnlinksHandler,
   isNotAlbumHandler,
   isSettingHandler,
-  getTokenChangePasswordHandler,
+  getAdminFromTokenHandler,
   validateAdminToken,
   validateAdminTokenAndUnlinks,
 } = require("./dbController.js");
@@ -39,6 +39,7 @@ let {
   sendContactMail,
   sendRecoverUsernameMail,
   sendRecoverPasswordMail,
+  sendResetDbMail,
 } = require("./mailController.js");
 
 let {
@@ -420,7 +421,7 @@ app.post("/changePassword", (req, res) => {
   let newPassword = bcrypt.hashSync(req.body.newPassword, SALT);
 
   // On vérifie que le token est valide
-  getTokenChangePasswordHandler(tokenValue, res).then((token) => {
+  getAdminFromTokenHandler(tokenValue, "resetPassword", res).then((token) => {
     if (token) {
       // Si valide, on change le mdp
       updateAdminPassword(token.username, newPassword).then((resp) => {
@@ -442,6 +443,59 @@ app.post("/sendMail", (req, res) => {
 
   getFirstAdmin().then((admin) => {
     sendContactMail(admin.username, name, email, message, res);
+  });
+});
+
+////////////////
+////// DB //////
+////////////////
+app.post("/askResetDb", (req, res) => {
+  let adminUsername = req.body.adminUsername;
+  let accessToken = req.body.accessToken;
+  console.log(adminUsername);
+  console.log(accessToken);
+
+  // On vérifie que l'utilisateur existe en bdd
+  validateAdminToken(adminUsername, accessToken, "connection", res).then(
+    (resp) => {
+      if (resp) {
+        // Si oui, on envoi un mail avec lien de réinitialisation de la bdd
+        sendResetDbMail(adminUsername, res);
+      }
+    }
+  );
+
+  // isAdminHandler(adminUsername, res).then((resp) => {
+  //   if (resp) {
+  //     // Si oui, on envoi un mail avec lien de réinitialisation de la bdd
+  //     sendResetDbMail(username, res);
+  //   }
+  // });
+});
+
+app.post("/proceedResetDb", (req, res) => {
+  let tokenValue = req.body.token;
+
+  // On vérifie que le token est valide
+  getAdminFromTokenHandler(tokenValue, "resetDb", res).then((token) => {
+    if (token) {
+      // Si valide, on change reset la bdd
+      resetDb().then((resp) => {
+        if (resp) {
+          handleSuccess(res);
+        } else {
+          handleError("La base de données n'a pas pû être modifiée", res);
+        }
+      });
+
+      // updateAdminPassword(token.username, newPassword).then((resp) => {
+      //   if (resp.acknowledged) {
+      //     handleSuccess(res);
+      //   } else {
+      //     handleError("Le mot de passe n'a pas pû être modifié", res);
+      //   }
+      // });
+    }
   });
 });
 
